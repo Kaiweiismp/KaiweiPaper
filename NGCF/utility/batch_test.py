@@ -162,7 +162,7 @@ def test(model, users_to_test, w, epoch, drop_flag=False, batch_test_flag=False)
         else:
             # all-item test
             item_batch = range(ITEM_NUM)
-
+            print(item_batch)
             if drop_flag == False:
                 u_g_embeddings, pos_i_g_embeddings, _ = model(user_batch,
                                                               item_batch,

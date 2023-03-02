@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument('--report', type=int, default=0,
                         help='0: Disable performance report w.r.t. sparsity levels, 1: Show performance report w.r.t. sparsity levels')
     
-    parser.add_argument('--round_verbose', type=int, default=5,
+    parser.add_argument('--round_verbose', type=int, default=10,
                         help='How many epoch will test')
 
     # tensorboard
