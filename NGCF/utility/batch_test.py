@@ -188,10 +188,10 @@ def test(model, users_to_test, w, epoch, drop_flag=False, batch_test_flag=False)
 
     if args.tensorboard:
             for k in range (len(Ks)):
-                w.add_scalars(f'Test_precision/{Ks[k]}', {str(args.Ks[k]): result['precision'][k]}, epoch)
-                w.add_scalars(f'Test_Recall/{Ks[k]}', {str(args.Ks[k]): result['recall'][k]}, epoch)
-                w.add_scalars(f'Test_ndcg/{Ks[k]}', {str(args.Ks[k]): result['ndcg'][k]}, epoch)
-                w.add_scalars(f'Test_hit_ratio/{Ks[k]}', {str(args.Ks[k]): result['hit_ratio'][k]}, epoch)
+                w.add_scalars(f'Test_precision/{Ks[k]}', {str(args.Ks[k]): result['precision'][k]}, epoch+1)
+                w.add_scalars(f'Test_Recall/{Ks[k]}', {str(args.Ks[k]): result['recall'][k]}, epoch+1)
+                w.add_scalars(f'Test_ndcg/{Ks[k]}', {str(args.Ks[k]): result['ndcg'][k]}, epoch+1)
+                w.add_scalars(f'Test_hit_ratio/{Ks[k]}', {str(args.Ks[k]): result['hit_ratio'][k]}, epoch+1)
     assert count == n_test_users
     pool.close()
     return result

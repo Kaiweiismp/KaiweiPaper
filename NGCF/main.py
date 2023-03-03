@@ -90,9 +90,9 @@ if __name__ == '__main__':
             emb_loss += batch_emb_loss
 
         if args.tensorboard:
-            w.add_scalar(f'BPRLoss/loss', loss, epoch)
-            w.add_scalar(f'BPRLoss/mf_loss', mf_loss, epoch)
-            w.add_scalar(f'BPRLoss/emb_loss', emb_loss, epoch)
+            w.add_scalar(f'BPRLoss/loss', loss, epoch+1)
+            w.add_scalar(f'BPRLoss/mf_loss', mf_loss, epoch+1)
+            w.add_scalar(f'BPRLoss/emb_loss', emb_loss, epoch+1)
 
         # *********************************************************
         # 如果 epoch 不是 10 的倍數，則下面都不做 
