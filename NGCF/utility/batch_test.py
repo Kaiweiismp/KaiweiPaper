@@ -1,10 +1,4 @@
-'''
-Created on Oct 10, 2018
-Tensorflow Implementation of Neural Graph Collaborative Filtering (NGCF) model in:
-Wang Xiang et al. Neural Graph Collaborative Filtering. In SIGIR 2019.
 
-@author: Xiang Wang (xiangwang@u.nus.edu)
-'''
 import utility.metrics as metrics
 from utility.parser import parse_args
 from utility.load_data import *
@@ -162,7 +156,6 @@ def test(model, users_to_test, w, epoch, drop_flag=False, batch_test_flag=False)
         else:
             # all-item test
             item_batch = range(ITEM_NUM)
-            print(item_batch)
             if drop_flag == False:
                 u_g_embeddings, pos_i_g_embeddings, _ = model(user_batch,
                                                               item_batch,

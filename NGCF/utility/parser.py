@@ -65,6 +65,11 @@ def parse_args():
     
     parser.add_argument('--round_verbose', type=int, default=10,
                         help='How many epoch will test')
+    
+    parser.add_argument('--KNN', type=int, default=3,
+                        help='Number of neighbor that decide')
+
+
 
     # tensorboard
     parser.add_argument('--tensorboard', type=int,default=1,

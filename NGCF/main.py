@@ -1,15 +1,12 @@
-'''
-Created on March 24, 2020
-
-@author: Tinglin Huang (huangtinglin@outlook.com)
-'''
 
 import torch
 import torch.optim as optim
 
 from NGCF import NGCF
+from NGCF import NGCF_twoGraph
 from utility.helper import *
 from utility.batch_test import *
+from utility.nearest_neighbor import *
 
 import os
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
