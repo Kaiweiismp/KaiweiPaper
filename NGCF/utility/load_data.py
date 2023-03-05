@@ -67,11 +67,11 @@ class Data(object):
                     self.personality_users.append(temp)
 
         self.print_statistics()
-        self.print_personality()
+        #self.print_personality()
 
 
         self.get_nearest_neighbor()
-        self.print_nearest_neighbor()
+        #self.print_nearest_neighbor()
 
         self.R = sp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
         self.R_p = sp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
