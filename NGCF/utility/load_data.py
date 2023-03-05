@@ -4,13 +4,23 @@ import random as rd
 import scipy.sparse as sp
 from time import time
 
+from numpy import dot
+from numpy.linalg import norm
+
+def cosine(a, b):
+    cos_sim = dot(a, b)/(norm(a)*norm(b))
+    return cos_sim
+
+
 class Data(object):
-    def __init__(self, path, batch_size):
+    def __init__(self, path, batch_size, K):
         self.path = path
         self.batch_size = batch_size
+        self.K = K
 
         train_file = path + '/train.txt'
         test_file = path + '/test.txt'
+        personality_file = path + '/personality.txt'
 
         #get number of users and items
         self.n_users, self.n_items = 0, 0
@@ -18,6 +28,9 @@ class Data(object):
         self.neg_pools = {}
 
         self.exist_users = []
+
+        self.personality_users = []
+        self.nearest_neighbor = []
 
         with open(train_file) as f:
             for l in f.readlines():
@@ -43,9 +56,25 @@ class Data(object):
         self.n_items += 1
         self.n_users += 1
 
+
+        with open(personality_file) as f:
+            for l in f.readlines():
+                if len(l) > 0:
+                    l = l.strip('\n')
+                    s = l.split(' ')
+                    s1 = s[1:]
+                    temp = [float(a) for a in s1]
+                    self.personality_users.append(temp)
+
         self.print_statistics()
+        self.print_personality()
+
+
+        self.get_nearest_neighbor()
+        self.print_nearest_neighbor()
 
         self.R = sp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
+        self.R_p = sp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
 
         self.train_items, self.test_set = {}, {}
         with open(train_file) as f_train:
@@ -73,6 +102,40 @@ class Data(object):
 
                     uid, test_items = items[0], items[1:]
                     self.test_set[uid] = test_items
+        for i in range(self.n_users):
+            for j in range(self.K):
+                temp = self.R[self.nearest_neighbor[i][j]]
+                temp_keys = temp.keys()
+                for kk in temp_keys:
+                    #print("kk : ", kk[1])
+                    self.R_p[i, kk] = 1.0
+                #for k in range(self.n_items):
+                    #print("self.nearest_neighbor[i] : ", i, self.nearest_neighbor[i])
+                    #print("self.nearest_neighbor[i][j] : ", self.nearest_neighbor[i][j])
+                    #if self.R[self.nearest_neighbor[i][j], k] == 1.0:
+                        #self.R_p[i, k] = 1.0
+
+
+
+
+    def get_nearest_neighbor(self):
+        dist_matrix = np.empty([self.n_users, self.n_users])
+        for i in range(self.n_users):
+            a = self.personality_users[i]
+            for j in range(i, self.n_users):
+                b = self.personality_users[j]
+                temp = cosine(a, b)
+                dist_matrix[i][j] = temp
+                dist_matrix[j][i] = temp 
+
+        for i in range(self.n_users):
+            dist_matrix[i][i] = 0
+
+        for i in range(self.n_users):
+            ind = np.argpartition(dist_matrix[i], -self.K)[-self.K:]
+            #print(ind)
+            temp = [int(a) for a in ind]
+            self.nearest_neighbor.append(temp)
 
     def get_adj_mat(self):
         try:
@@ -80,14 +143,22 @@ class Data(object):
             adj_mat = sp.load_npz(self.path + '/s_adj_mat.npz')
             norm_adj_mat = sp.load_npz(self.path + '/s_norm_adj_mat.npz')
             mean_adj_mat = sp.load_npz(self.path + '/s_mean_adj_mat.npz')
+            adj_mat_personality = sp.load_npz(self.path + '/s_adj_mat_personality.npz')
+            norm_adj_mat_personality = sp.load_npz(self.path + '/s_norm_adj_mat_personality.npz')
+            mean_adj_mat_personality = sp.load_npz(self.path + '/s_mean_adj_mat_personality.npz')
             print('already load adj matrix', adj_mat.shape, time() - t1)
 
         except Exception:
-            adj_mat, norm_adj_mat, mean_adj_mat = self.create_adj_mat()
+            adj_mat, norm_adj_mat, mean_adj_mat, adj_mat_personality, norm_adj_mat_personality, mean_adj_mat_personality = self.create_adj_mat()
             sp.save_npz(self.path + '/s_adj_mat.npz', adj_mat)
             sp.save_npz(self.path + '/s_norm_adj_mat.npz', norm_adj_mat)
             sp.save_npz(self.path + '/s_mean_adj_mat.npz', mean_adj_mat)
-        return adj_mat, norm_adj_mat, mean_adj_mat
+            sp.save_npz(self.path + '/s_adj_mat_personality.npz', adj_mat_personality)
+            sp.save_npz(self.path + '/s_norm_adj_mat_personality.npz', norm_adj_mat_personality)
+            sp.save_npz(self.path + '/s_mean_adj_mat_personality.npz', mean_adj_mat_personality)
+        return adj_mat, norm_adj_mat, mean_adj_mat, adj_mat_personality, norm_adj_mat_personality, mean_adj_mat_personality
+
+
 
     def create_adj_mat(self):
         t1 = time()
@@ -98,22 +169,38 @@ class Data(object):
         adj_mat[:self.n_users, self.n_users:] = R
         adj_mat[self.n_users:, :self.n_users] = R.T
         adj_mat = adj_mat.todok()
+
+        adj_mat_personality = sp.dok_matrix((self.n_users + self.n_items, self.n_users + self.n_items), dtype=np.float32)
+        adj_mat_personality = adj_mat_personality.tolil()
+        R_p = self.R_p.tolil()
+
+        adj_mat_personality[:self.n_users, self.n_users:] = R_p
+        adj_mat_personality[self.n_users:, :self.n_users] = R_p.T
+        adj_mat_personality = adj_mat_personality.todok()
+
         print('already create adjacency matrix', adj_mat.shape, time() - t1)
 
         t2 = time()
 
-        def mean_adj_single(adj):
+        def mean_adj_single(adj, adj_personality):
             # D^-1 * A
             rowsum = np.array(adj.sum(1))
+            rowsum_personality = np.array(adj_personality.sum(1))
+
 
             d_inv = np.power(rowsum, -1).flatten()
             d_inv[np.isinf(d_inv)] = 0.
             d_mat_inv = sp.diags(d_inv)
 
+            d_inv_personality = np.power(rowsum_personality, -1).flatten()
+            d_inv_personality[np.isinf(d_inv_personality)] = 0.
+            d_mat_inv_personality = sp.diags(d_inv_personality)
+
             norm_adj = d_mat_inv.dot(adj)
+            norm_adj_personality = d_mat_inv_personality.dot(adj_personality)
             # norm_adj = adj.dot(d_mat_inv)
             print('generate single-normalized adjacency matrix.')
-            return norm_adj.tocoo()
+            return norm_adj.tocoo(), norm_adj_personality.tocoo()
 
         def normalized_adj_single(adj):
             # D^-1/2 * A * D^-1/2
@@ -135,12 +222,12 @@ class Data(object):
             print('check normalized adjacency matrix whether equal to this laplacian matrix.')
             return temp
 
-        norm_adj_mat = mean_adj_single(adj_mat + sp.eye(adj_mat.shape[0]))
+        norm_adj_mat, norm_adj_mat_personality = mean_adj_single(adj_mat + sp.eye(adj_mat.shape[0]), adj_mat_personality + sp.eye(adj_mat_personality.shape[0]))
         # norm_adj_mat = normalized_adj_single(adj_mat + sp.eye(adj_mat.shape[0]))
-        mean_adj_mat = mean_adj_single(adj_mat)
+        mean_adj_mat, mean_adj_mat_personality = mean_adj_single(adj_mat, adj_mat_personality)
 
         print('already normalize adjacency matrix', time() - t2)
-        return adj_mat.tocsr(), norm_adj_mat.tocsr(), mean_adj_mat.tocsr()
+        return adj_mat.tocsr(), norm_adj_mat.tocsr(), mean_adj_mat.tocsr(), adj_mat_personality.tocsr(), norm_adj_mat_personality.tocsr(), mean_adj_mat_personality.tocsr()
 
     def negative_pool(self):
         t1 = time()
@@ -200,6 +287,23 @@ class Data(object):
         print('n_users=%d, n_items=%d' % (self.n_users, self.n_items))
         print('n_interactions=%d' % (self.n_train + self.n_test))
         print('n_train=%d, n_test=%d, sparsity=%.5f' % (self.n_train, self.n_test, (self.n_train + self.n_test)/(self.n_users * self.n_items)))
+
+    def print_personality(self):
+        print(self.personality_users[0])
+        print(self.personality_users[1])
+        print(self.personality_users[2])
+        print(self.personality_users[3])
+        print(self.personality_users[4])
+        print(self.personality_users[self.n_users - 1])
+
+    def print_nearest_neighbor(self):
+        print("\n")
+        print(self.nearest_neighbor[0])
+        print(self.nearest_neighbor[1])
+        print(self.nearest_neighbor[2])
+        print(self.nearest_neighbor[3])
+        print(self.nearest_neighbor[4])
+        print(self.nearest_neighbor[self.n_users - 1])
 
     def get_sparsity_split(self):
         try:

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 
 class NGCF(nn.Module):
-    def __init__(self, n_user, n_item, norm_adj, args):
+    def __init__(self, n_user, n_item, norm_adj, norm_adj_personality, args):
         super(NGCF, self).__init__()
         self.n_user = n_user
         self.n_item = n_item
@@ -17,6 +17,7 @@ class NGCF(nn.Module):
         self.batch_size = args.batch_size
 
         self.norm_adj = norm_adj
+        self.norm_adj_personality = norm_adj_personality
 
         self.layers = eval(args.layer_size)
         self.decay = eval(args.regs)[0]
@@ -32,6 +33,7 @@ class NGCF(nn.Module):
         Get sparse adj.
         """
         self.sparse_norm_adj = self._convert_sp_mat_to_sp_tensor(self.norm_adj).to(self.device)
+        self.sparse_norm_adj_personality = self._convert_sp_mat_to_sp_tensor(self.norm_adj_personality).to(self.device)
 
     def init_weight(self):
         # xavier init
@@ -42,6 +44,8 @@ class NGCF(nn.Module):
                                                  self.emb_size))),
             'item_emb': nn.Parameter(initializer(torch.empty(self.n_item,
                                                  self.emb_size)))
+            'user_personality_emb': nn.Parameter(initializer(torch.empty(self.n_user,
+                                                 self.emb_size))),
         })
 
         weight_dict = nn.ParameterDict()
