@@ -1,1 +1,1 @@
-python3 main.py --dataset personality2018 --regs [1e-5] --embed_size 64 --layer_size [64,64,64] --lr 0.0001 --save_flag 1 --pretrain 0 --batch_size 1024 --epoch 1000 --verbose 1 --node_dropout [0.1] --mess_dropout [0.1,0.1,0.1]
+python3 main2.py --dataset personality2018 --regs [1e-5] --embed_size 64 --layer_size [64,64,64] --lr 0.0001 --save_flag 1 --pretrain 0 --batch_size 1024 --epoch 1000 --verbose 1 --node_dropout [0.1] --mess_dropout [0.1,0.1,0.1]
