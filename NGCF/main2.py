@@ -19,6 +19,7 @@ from tensorboardX import SummaryWriter
 from os.path import join
 
 BOARD_PATH = "/home/ismp/sda1/kaiwei/NGCF-PyTorch/NGCF/board"
+RESULT_PATH = "/home/ismp/sda1/kaiwei/NGCF-PyTorch/NGCF/result"
 
 if __name__ == '__main__':
     #print("============gpu_id==============")
@@ -103,9 +104,14 @@ if __name__ == '__main__':
         # *********************************************************
         t2 = time.time()
         users_to_test = list(data_generator.test_set.keys())
-        ret = test(model, users_to_test, w, epoch, drop_flag=False)
+        ret, result = test(model, users_to_test, w, epoch, drop_flag=False)
 
         t3 = time.time()
+
+        f = open(join(RESULT_PATH, str(epoch + 1) + ".txt") , 'w')
+        for re in result:
+            f.writelines(str(re) + '\n')
+        f.close()        
 
         loss_loger.append(loss)
         rec_loger.append(ret['recall'])

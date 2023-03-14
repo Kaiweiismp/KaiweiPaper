@@ -1,0 +1,1 @@
+RESULT_PATH = "/home/ismp/sda1/kaiwei/NGCF-PyTorch/NGCF/result/"

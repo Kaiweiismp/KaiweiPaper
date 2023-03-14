@@ -23,6 +23,7 @@ def ranklist_by_heapq(user_pos_test, test_items, rating, Ks):
     K_max = max(Ks)
     K_max_item_score = heapq.nlargest(K_max, item_score, key=item_score.get)
 
+
     r = []
     for i in K_max_item_score:
         if i in user_pos_test:
@@ -30,7 +31,7 @@ def ranklist_by_heapq(user_pos_test, test_items, rating, Ks):
         else:
             r.append(0)
     auc = 0.
-    return r, auc
+    return r, auc, K_max_item_score
 
 def get_auc(item_score, user_pos_test):
     item_score = sorted(item_score.items(), key=lambda kv: kv[1])
@@ -62,9 +63,9 @@ def ranklist_by_sorted(user_pos_test, test_items, rating, Ks):
         else:
             r.append(0)
     auc = get_auc(item_score, user_pos_test)
-    return r, auc
+    return r, auc, K_max_item_score
 
-def get_performance(user_pos_test, r, auc, Ks):
+def get_performance(user_pos_test, r, auc, Ks, K_max):
     precision, recall, ndcg, hit_ratio = [], [], [], []
 
     for K in Ks:
@@ -74,7 +75,7 @@ def get_performance(user_pos_test, r, auc, Ks):
         hit_ratio.append(metrics.hit_at_k(r, K))
 
     return {'recall': np.array(recall), 'precision': np.array(precision),
-            'ndcg': np.array(ndcg), 'hit_ratio': np.array(hit_ratio), 'auc': auc}
+            'ndcg': np.array(ndcg), 'hit_ratio': np.array(hit_ratio), 'auc': auc, 'K_max': K_max}
 
 
 def test_one_user(x):
@@ -95,11 +96,11 @@ def test_one_user(x):
     test_items = list(all_items - set(training_items))
 
     if args.test_flag == 'part':
-        r, auc = ranklist_by_heapq(user_pos_test, test_items, rating, Ks)
+        r, auc, K_max_item_score = ranklist_by_heapq(user_pos_test, test_items, rating, Ks)
     else:
-        r, auc = ranklist_by_sorted(user_pos_test, test_items, rating, Ks)
+        r, auc, K_max_item_score = ranklist_by_sorted(user_pos_test, test_items, rating, Ks)
 
-    return get_performance(user_pos_test, r, auc, Ks)
+    return get_performance(user_pos_test, r, auc, Ks, K_max_item_score)
 
 
 def test(model, users_to_test, w, epoch, drop_flag=False, batch_test_flag=False):
@@ -172,12 +173,14 @@ def test(model, users_to_test, w, epoch, drop_flag=False, batch_test_flag=False)
         user_batch_rating_uid = zip(rate_batch.numpy(), user_batch)
         batch_result = pool.map(test_one_user, user_batch_rating_uid)
         count += len(batch_result)
+        K_max_item_result = []
         for re in batch_result:
             result['precision'] += re['precision']/n_test_users
             result['recall'] += re['recall']/n_test_users
             result['ndcg'] += re['ndcg']/n_test_users
             result['hit_ratio'] += re['hit_ratio']/n_test_users
             result['auc'] += re['auc']/n_test_users
+            K_max_item_result.append(re['K_max'])
 
     if args.tensorboard:
             for k in range (len(Ks)):
@@ -187,4 +190,4 @@ def test(model, users_to_test, w, epoch, drop_flag=False, batch_test_flag=False)
                 w.add_scalars(f'Test_hit_ratio/{Ks[k]}', {str(args.Ks[k]): result['hit_ratio'][k]}, epoch+1)
     assert count == n_test_users
     pool.close()
-    return result
+    return result, K_max_item_result
