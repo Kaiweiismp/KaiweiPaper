@@ -107,13 +107,10 @@ class Data(object):
                 temp = self.R[self.nearest_neighbor[i][j]]
                 temp_keys = temp.keys()
                 for kk in temp_keys:
-                    #print("kk : ", kk[1])
                     self.R_p[i, kk] = 1.0
-                #for k in range(self.n_items):
-                    #print("self.nearest_neighbor[i] : ", i, self.nearest_neighbor[i])
-                    #print("self.nearest_neighbor[i][j] : ", self.nearest_neighbor[i][j])
-                    #if self.R[self.nearest_neighbor[i][j], k] == 1.0:
-                        #self.R_p[i, k] = 1.0
+
+
+            
 
 
 

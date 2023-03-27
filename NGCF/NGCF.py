@@ -45,17 +45,13 @@ class NGCF(nn.Module):
             'item_emb': nn.Parameter(initializer(torch.empty(self.n_item,
                                                  self.emb_size))),
             'user_personality_emb': nn.Parameter(initializer(torch.empty(self.n_user,
-                                                 self.emb_size)))
+                                                 self.emb_size)))                                  
             })
 
         weight_dict = nn.ParameterDict()
         # 每層 layers 的 output size(包含初始 embeddings)
         layers = [self.emb_size] + self.layers
-        #print("==========layers==========")
-        #print(self.emb_size)
-        #print([self.emb_size])
-        #print(self.layers)
-        #print(layers)
+
         for k in range(len(self.layers)):
             weight_dict.update({'W_gc_%d'%k: nn.Parameter(initializer(torch.empty(layers[k],
                                                                       layers[k+1])))})
@@ -108,16 +104,16 @@ class NGCF(nn.Module):
         A_hat = self.sparse_dropout(self.sparse_norm_adj,
                                     self.node_dropout,
                                     self.sparse_norm_adj._nnz()) if drop_flag else self.sparse_norm_adj
-        
-        A_hat_personality = self.sparse_dropout(self.sparse_norm_adj_personality,
-                                    self.node_dropout,
-                                    self.sparse_norm_adj_personality._nnz()) if drop_flag else self.sparse_norm_adj_personality
-
 
         ego_embeddings = torch.cat([self.embedding_dict['user_emb'],
                                     self.embedding_dict['item_emb']], 0)
 
         all_embeddings = [ego_embeddings]
+
+
+        A_hat_personality = self.sparse_dropout(self.sparse_norm_adj_personality,
+                                    self.node_dropout,
+                                    self.sparse_norm_adj_personality._nnz()) if drop_flag else self.sparse_norm_adj_personality
 
         ego_personality_embeddings = torch.cat([self.embedding_dict['user_personality_emb'],
                                     self.embedding_dict['item_emb']], 0)
@@ -147,7 +143,7 @@ class NGCF(nn.Module):
 
             all_embeddings += [norm_embeddings]
 
-        for k in range(len(self.layers)):
+            ##################################### Personality graph #####################################
             side_personality_embeddings = torch.sparse.mm(A_hat_personality, ego_personality_embeddings)
 
             # transformed sum messages of neighbors.
